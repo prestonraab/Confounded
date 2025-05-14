@@ -91,7 +91,7 @@ def make_layers(inputs, layer_sizes, activations=None, rate=0.0, do_batch_norm=F
     current_layer = inputs
     for layer_size, activation in zip(layer_sizes, activations):
         current_layer = Dense(layer_size, activation=activation)(current_layer)
-        current_layer = tf.nn.dropout(current_layer, rate)
+        current_layer = tf.nn.dropout(current_layer, rate=rate)
         if do_batch_norm:
             current_layer = BatchNormalization()(current_layer)
     return current_layer
