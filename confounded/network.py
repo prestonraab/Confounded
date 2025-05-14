@@ -63,9 +63,9 @@ def variational_autoencoder(inputs, code_size=20):
     activations = [tf.nn.elu for _ in layer_sizes]
     input_size = get_layer_size(inputs)
 
-    encoding = make_layers(inputs, layer_sizes, activations)
+    encoding = make_layers(inputs, layer_sizes, activations, rate=0.0)
     code_mean, code_gamma, code = vae_code_layer(encoding, code_size)
-    decoding = make_layers(code, layer_sizes, activations)
+    decoding = make_layers(code, layer_sizes, activations, rate=0.0)
     
     logits = Dense(input_size, activation=None)(decoding)
     outputs = tf.sigmoid(logits)
@@ -85,7 +85,7 @@ def get_layer_size(layer):
         size *= int(dimension) # must be converted from Dimension to int
     return size
 
-def make_layers(inputs, layer_sizes, activations=None, rate=0.0, do_batch_norm=False):
+def make_layers(inputs, layer_sizes, activations=None, rate=0.05, do_batch_norm=False):
     if not activations:
         activations = [tf.nn.relu for _ in layer_sizes]
     current_layer = inputs
