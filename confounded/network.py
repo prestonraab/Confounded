@@ -85,7 +85,7 @@ def get_layer_size(layer):
         size *= int(dimension) # must be converted from Dimension to int
     return size
 
-def make_layers(inputs, layer_sizes, activations=None, rate=0.05, do_batch_norm=False):
+def make_layers(inputs, layer_sizes, activations=None, rate=0.0, do_batch_norm=False):
     if not activations:
         activations = [tf.nn.relu for _ in layer_sizes]
     current_layer = inputs
