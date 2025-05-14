@@ -36,7 +36,7 @@ TL;DR:
 git clone https://github.com/jdayton3/Confounded.git
 wget https://repo.anaconda.com/archive/Anaconda3-5.3.1-Linux-x86_64.sh # Or the anaconda installer for your system.
 bash Anaconda3-5.3.1-Linux-x86_64.sh # Go through the install process.
-conda create -n confounded python=3.6 r-tidyverse scikit-learn
+conda create -n confounded python=3.9 r-tidyverse scikit-learn tqdm pandas
 source activate confounded
 pip install tensorflow # or tensorflow-gpu
 ```

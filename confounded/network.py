@@ -1,12 +1,13 @@
 """Definitions for the neural networks in Confounded.
 """
-
-# pylint: disable=E1129
-
 import functools
 import tensorflow as tf
-from tensorflow.contrib.layers import fully_connected, batch_norm # pylint: disable=E0611
+from tensorflow.keras.layers import Dense, BatchNormalization
 from math import ceil
+
+# Enable TF 1.x compatibility mode (temporary measure)
+tf = tf.compat.v1
+tf.disable_v2_behavior()
 
 def is_square(n):
     sqrt = n**0.5
@@ -65,7 +66,8 @@ def variational_autoencoder(inputs, code_size=20):
     encoding = make_layers(inputs, layer_sizes, activations)
     code_mean, code_gamma, code = vae_code_layer(encoding, code_size)
     decoding = make_layers(code, layer_sizes, activations)
-    logits = fully_connected(decoding, input_size, activation_fn=None)
+    
+    logits = Dense(input_size, activation=None)(decoding)
     outputs = tf.sigmoid(logits)
 
     reconstruction_loss = tf.losses.mean_squared_error(inputs, outputs)
@@ -73,9 +75,7 @@ def variational_autoencoder(inputs, code_size=20):
     reconstruction_loss = tf.reduce_sum(xentropy)
     latent_loss = kl_divergence(code_gamma, code_mean) #* 0.01 / code_size
     loss = reconstruction_loss + latent_loss
-
     loss = loss / input_size
-
     return outputs, loss
 
 def get_layer_size(layer):
@@ -85,20 +85,20 @@ def get_layer_size(layer):
         size *= int(dimension) # must be converted from Dimension to int
     return size
 
-def make_layers(inputs, layer_sizes, activations=None, keep_prob=1.0, do_batch_norm=False):
+def make_layers(inputs, layer_sizes, activations=None, rate=0.0, do_batch_norm=False):
     if not activations:
         activations = [tf.nn.relu for _ in layer_sizes]
     current_layer = inputs
     for layer_size, activation in zip(layer_sizes, activations):
-        current_layer = fully_connected(current_layer, layer_size, activation_fn=activation)
-        current_layer = tf.nn.dropout(current_layer, keep_prob)
+        current_layer = Dense(layer_size, activation=activation)(current_layer)
+        current_layer = tf.nn.dropout(current_layer, rate)
         if do_batch_norm:
-            current_layer = batch_norm(current_layer)
+            current_layer = BatchNormalization()(current_layer)
     return current_layer
 
 def vae_code_layer(inputs, code_size):
-    code_mean = fully_connected(inputs, code_size, activation_fn=None)
-    code_gamma = fully_connected(inputs, code_size, activation_fn=None)
+    code_mean = Dense(code_size, activation=None)(inputs)
+    code_gamma = Dense(code_size, activation=None)(inputs)
     noise = tf.random_normal(tf.shape(code_gamma), dtype=tf.float32)
     code = code_mean + tf.exp(0.5 * code_gamma) * noise
     return code_mean, code_gamma, code
@@ -134,10 +134,13 @@ class Confounded(object):
         self.disc_weighting = disc_weghting
         self.learning_rate = learning_rate
 
-        self.inputs = None
         self.code = None
         self.outputs = None
-        self.targets = None
+
+        # Replace placeholders with compat version
+        self.inputs = tf.placeholder(tf.float32, [None, self.input_size])
+        self.targets = tf.placeholder(tf.float32, [None, self.num_targets])
+        
         self.logits = None
         self.classification = None
 
@@ -162,13 +165,13 @@ class Confounded(object):
     @var_scope("discriminator")
     def _setup_discriminator(self):
         self.targets = tf.placeholder(tf.float32, [None, self.num_targets])
-        inputs = batch_norm(self.outputs)
+        inputs = BatchNormalization()(self.outputs)
         layer_size = 512
         layer_sizes = [int(ceil(layer_size / 2**n)) for n in range(self.discriminator_layers)]
         layer_sizes = [1024, 512, 512, 128]
-        penultimate_layer = make_layers(self.outputs, layer_sizes, keep_prob=0.5, do_batch_norm=True)
+        penultimate_layer = make_layers(self.outputs, layer_sizes, rate=0.5, do_batch_norm=True)
         with tf.variable_scope("do_not_save"):
-            self.logits = fully_connected(penultimate_layer, self.num_targets, activation_fn=None)
+            self.logits = Dense(self.num_targets, activation=None)(penultimate_layer)
             self.classification = tf.nn.sigmoid(self.logits)
 
     @var_scope("discriminator")

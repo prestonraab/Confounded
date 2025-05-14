@@ -10,3 +10,4 @@ objectdb
 .vscode/
 *.csv
 scratch.txt
+.DS_Store

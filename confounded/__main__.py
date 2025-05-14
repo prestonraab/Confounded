@@ -7,6 +7,10 @@ from tqdm import tqdm
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
+
+tf = tf.compat.v1
+tf.disable_v2_behavior()
+
 import pandas as pd
 from . import reformat
 from .load_data import split_features_labels, list_categorical_columns
@@ -42,7 +46,7 @@ def parse_arguments():
         "-a", "--ae-layers", type=positive_int, default=2,
         help="How many layers in each of the encoding and decoding portions of the autoencoder.")
     parser.add_argument(
-        "-b", "--batch-col", type=str, default="Batch",
+        "-b", "--batch-col", type=str, default="batch",
         help="Which column contains the batch to adjust for.")
     parser.add_argument(
         "-c", "--code-size", type=positive_int, default=20,
@@ -180,7 +184,7 @@ def autoencoder(input_path,
                 d_layers=2,
                 ae_layers=2,
                 activation=tf.nn.relu,
-                batch_col="Batch",
+                batch_col="batch",
                 early_stopping=None,
                 scaling="linear",
                 disc_weighting=1.0,
@@ -216,7 +220,7 @@ def autoencoder(input_path,
         disc_weghting=disc_weighting
     )
 
-    all_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+    all_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES)
     vars_to_replace = [var for var in all_vars if "do_not_save" in var.name]
     vars_to_keep = [var for var in all_vars if var not in vars_to_replace]
     saver = tf.train.Saver(vars_to_keep)
